@@ -39,7 +39,7 @@ export default function useDat() {
 
   async function downloadFile(file) {
     const { type, dir, name } = file;
-    const archive = file.type === 'remote' ? sharedArchive : ownArchive;
+    const archive = file.type === 'incoming' ? sharedArchive : ownArchive;
     const data = await readFile(archive, `${dir}/${name}`, 'binary')
     const blob = new Blob([data], { type: 'octet/stream' });
     const url = window.URL.createObjectURL(blob);
@@ -61,7 +61,7 @@ export default function useDat() {
         type,
         dir
       }));
-      if (type === 'remote') {
+      if (type === 'incoming') {
         setIncomingFiles(files);
       } else if (type === 'outgoing') {
         setOutgoingFiles(files);
@@ -82,7 +82,7 @@ export default function useDat() {
           const incomingStream = watch(_sharedArchive, '/shared/**');
           incomingStream.on('data', ([event, args]) => {
             if (event === 'invalidated') {
-              getFiles('remote', _sharedArchive, '/shared');
+              getFiles('incoming', _sharedArchive, '/shared');
             }
           })
         })
