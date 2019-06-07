@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import Dat from 'dat-js';
-import { readFile, readdir, mkdir, writeFile, download, watch } from 'pats-dat-api';
+import { copy, readFile, readdir, mkdir, writeFile, download, watch } from 'pats-dat-api';
 
 const _dat = new Dat();
 const _ownArchive = _dat.create();
@@ -13,6 +13,7 @@ export default function useDat() {
   const [myFiles, setMyFiles] = useState([]);
   const [incomingFiles, setIncomingFiles] = useState([]);
   const [outgoingFiles, setOutgoingFiles] = useState([]);
+  const [connectedUrl, setConnectedUrl] = useState('');
 
   useEffect(() => {
     ownArchive.ready(function() {
@@ -34,6 +35,17 @@ export default function useDat() {
           getFiles('mine', ownArchive, '/own');
         }
       })
+
+      let flag = false;
+      dat.swarm.on('connection', (connection) => {
+        console.log('connected!', connection);
+        if (!flag) {
+          const connectionKey = connection.discoveryKey.toString('hex');
+          setConnectedUrl(connectionKey);
+          read(connectionKey)
+          flag = true;
+        }
+      });
     });
   }, []);
 
@@ -104,17 +116,13 @@ export default function useDat() {
     reader.readAsBinaryString(file);
   }
 
-  function share(file) {
-    const { name } = file
-    const reader = new FileReader();
-    reader.onload = () => {
-      ownArchive.ready(function() {
-        ownArchive.writeFile(`/shared/${name}`, reader.result, 'binary', function(err) {
-          if (err) throw new Error('error sharing file:', err);
-        })
-      });
-    };
-    reader.readAsBinaryString(file);
+  async function share(file) {
+    try {
+      await copy(ownArchive, `own/${file.name}`, `/shared/${file.name}`)
+      console.log('copied');
+    } catch(err) {
+      throw new Error('error sharing file:', err);
+    }
   }
 
   return {
@@ -127,6 +135,8 @@ export default function useDat() {
     incomingFiles,
     outgoingFiles,
     myFiles,
-    downloadFile
+    downloadFile,
+    sharedArchive,
+    connectedUrl
   };
 }

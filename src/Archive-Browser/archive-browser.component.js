@@ -1,8 +1,19 @@
 import React from 'react';
+import useDat from '../useDat';
 
 function ArchiveBrowser(props) {
+  const dat = useDat();
+
   function copyUrl() {
     console.log('copy the url')
+  }
+
+  function share(file) {
+    dat.share(file);
+  }
+
+  function download(file) {
+    dat.downloadFile(file);
   }
   
   return (
@@ -24,6 +35,8 @@ function ArchiveBrowser(props) {
                   <div className="card">
                     <div className="card-body">
                       <h3>{file.name}</h3>
+                      <button onClick={share.bind(null, file)}>Share</button>
+                      <button onClick={download.bind(null, file)}>Download</button>
                     </div>
                   </div>
                 </div>

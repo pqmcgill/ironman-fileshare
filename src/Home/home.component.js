@@ -3,24 +3,22 @@ import useDat from '../useDat';
 import ArchiveBrowser from '../Archive-Browser/archive-browser.component';
 
 function HomeComponent() {
-  const [state, setState] = useState({
-    archiveId: '',
-    sharedFiles: []
-  });
+  const [archiveId, setArchiveId] = useState('');
 
   const dat = useDat();
 
   function archiveIdChanged(event) {
-    setState({ ...state, archiveId: event.target.value });
+    setArchiveId(event.target.value);
   }
 
   function openSharedDirectory() {
-    //dat.read(state.archiveId);
-    //const sharedFiles = state.sharedFiles.push(dat.read);
-    const sharedFiles = state.sharedFiles.push({ name: 'shared file name'});
-    setState({ ...state, sharedFiles: sharedFiles });
+    dat.read(archiveId);
   }
 
+  function selectFile(e) {
+    const file = e.target.files[0];
+    dat.write(file);
+  }
 
   console.log('incoming', dat.incomingFiles);
 
@@ -28,7 +26,7 @@ function HomeComponent() {
     <div>
       <div>
         {
-          state.sharedFiles.length === 0
+          !dat.connectedUrl
           ?
             <div className="bg-light">
               <div className="container text-left py-5 text-center">
@@ -38,7 +36,7 @@ function HomeComponent() {
                   <input className="form-control col" 
                     type="text" 
                     placeholder="Enter a Shared ID" 
-                    value={state.archiveId}
+                    value={archiveId}
                     onChange={archiveIdChanged} />
                   <a className="btn btn-primary d-flex ml-3" onClick={openSharedDirectory}>Connect</a>
                 </div>
@@ -48,14 +46,15 @@ function HomeComponent() {
           :
           <div class="bg-info text-light py-5">
             <div className="container">
-              <ArchiveBrowser name="Shared Directory" datUrl={state.archiveId} files={state.sharedFiles} />
+              <ArchiveBrowser name="Shared Directory" datUrl={''} files={dat.incomingFiles} />
             </div>
           </div>
         }
       </div> 
       <div className="album py-5">
         <div className="container">
-          <ArchiveBrowser name="Your Local Directory" datUrl={dat.url} files={state.personalFiles} />
+          <input type="file" onChange={selectFile} />
+          <ArchiveBrowser name="Your Local Directory" datUrl={dat.url} files={dat.myFiles} />
         </div>
       </div>
     </div>
