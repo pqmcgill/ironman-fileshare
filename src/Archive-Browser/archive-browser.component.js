@@ -1,5 +1,6 @@
 import React from 'react';
 import useDat from '../useDat';
+import {CopyToClipboard} from 'react-copy-to-clipboard';
 
 function ArchiveBrowser(props) {
   const dat = useDat();
@@ -19,12 +20,17 @@ function ArchiveBrowser(props) {
   return (
     <div className="py-3">
       <h2>{props.name}</h2>
-      <p>
-        <small>URL: {props.datUrl}</small>
-        <a href="#" onClick={copyUrl}>
-          <i className="fas fa-copy pl-2"></i>
-        </a>
-      </p>
+      {
+        props.datUrl && 
+        <p>
+          <small>URL: {props.datUrl}</small>
+          <CopyToClipboard text={props.datUrl}>
+            <a href="#" onClick={copyUrl}>
+              <i className="fas fa-copy pl-2"></i>
+            </a>
+          </CopyToClipboard>
+        </p>
+      }
       { 
         props.files && props.files.length
         ? 

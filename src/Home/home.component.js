@@ -38,13 +38,13 @@ function HomeComponent() {
                     placeholder="Enter a Shared ID" 
                     value={archiveId}
                     onChange={archiveIdChanged} />
-                  <a className="btn btn-primary d-flex ml-3" onClick={openSharedDirectory}>Connect</a>
+                  <a href="#" className="btn btn-primary d-flex ml-3" onClick={openSharedDirectory}>Connect</a>
                 </div>
                 
               </div>
             </div>
           :
-          <div class="bg-info text-light py-5">
+          <div className="bg-info text-light py-5">
             <div className="container">
               <ArchiveBrowser name="Shared Directory" datUrl={''} files={dat.incomingFiles} />
             </div>
