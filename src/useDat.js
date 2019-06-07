@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
 import Dat from 'dat-js';
-import { readdir, mkdir, writeFile, download, watch } from 'pats-dat-api';
+import { readFile, readdir, mkdir, writeFile, download, watch } from 'pats-dat-api';
+
+const _dat = new Dat();
+const _ownArchive = _dat.create();
+let sharedArchive;
 
 export default function useDat() {
-  const [dat, setDat] = useState(new Dat());
-  const [ownArchive, setOwnArchive] = useState(dat.create()); 
-  const [sharedArchive, setSharedArchive] = useState(null);
+  const [dat, setDat] = useState(_dat);
+  const [ownArchive, setOwnArchive] = useState(_ownArchive); 
   const [url, setUrl] = useState(ownArchive.url);
   const [myFiles, setMyFiles] = useState([]);
   const [incomingFiles, setIncomingFiles] = useState([]);
@@ -20,54 +23,98 @@ export default function useDat() {
 
       outgoingStream.on('data', ([event, args]) => {
         if (event === 'invalidated') {
-          console.log(args.path, 'has been invalidated')
-        } else if (event === 'changed') {
-          console.log(args.path, 'has changed')
+          getFiles('outgoing', ownArchive, '/shared');
+        }
+      });
+
+      const myStream = watch(ownArchive, '/own/**');
+
+      myStream.on('data', ([event, args]) => {
+        if (event === 'invalidated') {
+          getFiles('mine', ownArchive, '/own');
         }
       })
     });
   }, []);
 
+  async function downloadFile(file) {
+    const { type, dir, name } = file;
+    const archive = file.type === 'remote' ? sharedArchive : ownArchive;
+    const data = await readFile(archive, `${dir}/${name}`, 'binary')
+    const blob = new Blob([data], { type: 'octet/stream' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");    
+    link.href = url;
+    link.style = "visibility:hidden";
+    link.download = name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  async function getFiles(type, archive, dir) {
+    try {
+      const here = await download(archive, dir)
+      const list = await readdir(archive, dir);
+      const files = list.map(name => ({
+        name,
+        type,
+        dir
+      }));
+      if (type === 'remote') {
+        setIncomingFiles(files);
+      } else if (type === 'outgoing') {
+        setOutgoingFiles(files);
+      } else {
+        setMyFiles(files);
+      }
+    } catch(e) {
+      console.log('whoops', e);
+    }
+  }
 
   function read(url) {
     const _sharedArchive = dat.get(url);
+    sharedArchive = _sharedArchive;
     _sharedArchive.ready(function() {
       setTimeout(() => {
         download(_sharedArchive, '/shared', function(err) {
-          if (err) throw new Error('error downloading shared folder: ' + err);
           const incomingStream = watch(_sharedArchive, '/shared/**');
           incomingStream.on('data', ([event, args]) => {
-            console.log('new data');
             if (event === 'invalidated') {
-              console.log('remote', args.path, 'has been invalidated');
-            } else {
-              console.log('remote', args.path, 'has changed');
+              getFiles('remote', _sharedArchive, '/shared');
             }
           })
         })
       }, 1000); // timeout due to network latecy. TODO: determine how to be sure a connection has been made
     })
-    setSharedArchive(_sharedArchive);
   }
 
   function write(file) {
     const { name } = file;
-    ownArchive.ready(function() {
-      ownArchive.writeFile(`/own/${name}`, file, function(err) {
-        if (err) throw new Error('error writing file to own archive: ' + err);
-        console.log('successfully wrote to own archive');
-      })
-    });
+    const reader = new FileReader();
+    reader.onload = () => {
+      ownArchive.ready(function() {
+        ownArchive.writeFile(`/own/${name}`, reader.result, 'binary', function(err) {
+          if (err) throw new Error('error writing file to own archive: ' + err);
+          console.log('successfully wrote to own archive');
+        })
+      });
+    };
+    reader.readAsBinaryString(file);
   }
 
   function share(file) {
     const { name } = file
-    ownArchive.ready(function() {
-      ownArchive.writeFile(`/shared/${name}`, file, function(err) {
-        if (err) throw new Error('error writing file to shared archive: ' + err);
-        console.log('successfully wrote to shared archive');
-      })
-    });
+    const reader = new FileReader();
+    reader.onload = () => {
+      ownArchive.ready(function() {
+        ownArchive.writeFile(`/shared/${name}`, reader.result, 'binary', function(err) {
+          if (err) throw new Error('error sharing file:', err);
+        })
+      });
+    };
+    reader.readAsBinaryString(file);
   }
 
   return {
@@ -76,6 +123,10 @@ export default function useDat() {
     ready: !!ownArchive, 
     read,
     write,
-    share
+    share,
+    incomingFiles,
+    outgoingFiles,
+    myFiles,
+    downloadFile
   };
 }

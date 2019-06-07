@@ -7,14 +7,6 @@ import ArchiveBrowser from '../Archive-Browser/archive-browser.component';
 function HomeComponent() {
   const [state, setState] = useState({
     archiveId: '',
-    personalFiles: [
-      {
-        name: 'File Name 1'
-      },
-      {
-        name: 'File Name 2'
-      }
-    ],
     sharedFiles: []
   });
 
@@ -29,6 +21,9 @@ function HomeComponent() {
     setState({ ...state, sharedFiles: sharedFiles });
     dat.read(state.archiveId);
   }
+
+
+  console.log('incoming', dat.incomingFiles);
 
   return (
     <div>
@@ -50,7 +45,7 @@ function HomeComponent() {
       <div className="album py-5">
         <div className="container">
           <h2>Your Local Directory: {dat.url}</h2>
-          <ArchiveBrowser files={state.personalFiles} />
+          <ArchiveBrowser files={dat.incomingFiles} />
         </div>
 
       </div>

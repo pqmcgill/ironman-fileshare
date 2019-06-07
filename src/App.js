@@ -7,7 +7,6 @@ import HomeComponent from './Home/home.component';
 function App() {
   return (
     <div className="App">
-      <TestDat />
       <div className="navbar navbar-dark bg-dark box-shadow">
         <div className="container d-flex justify-content-between">
           <a href="#" className="navbar-brand d-flex align-items-center">
