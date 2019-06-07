@@ -1,5 +1,4 @@
 import React from 'react';
-import TestDat from './TestDat';
 import './App.css';
 import logo from './ironman.png';
 import HomeComponent from './Home/home.component';
