@@ -32,15 +32,18 @@ export default function useDat() {
   function read(url) {
     const _sharedArchive = dat.get(url);
     _sharedArchive.ready(function() {
-      console.log('archive', _sharedArchive);
       setTimeout(() => {
         download(_sharedArchive, '/shared', function(err) {
           if (err) throw new Error('error downloading shared folder: ' + err);
-          console.log('here', arguments);
-          _sharedArchive.readdir('/shared', function(err, list) {
-            if (err) throw new Error('error reading from shared folder: ' + err);
-            console.log('contents of shared folder: ', list);
-          });
+          const incomingStream = watch(_sharedArchive, '/shared/**');
+          incomingStream.on('data', ([event, args]) => {
+            console.log('new data');
+            if (event === 'invalidated') {
+              console.log('remote', args.path, 'has been invalidated');
+            } else {
+              console.log('remote', args.path, 'has changed');
+            }
+          })
         })
       }, 1000); // timeout due to network latecy. TODO: determine how to be sure a connection has been made
     })
